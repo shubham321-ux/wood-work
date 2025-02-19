@@ -1,22 +1,23 @@
-const express = require('express');
-const path = require('path');
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Serve static assets if in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'client/build')));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
-  });
-}
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../client/build')));
 
-// Basic route for testing
+// API routes go here
 app.get('/api', (req, res) => {
-  res.json({ message: 'Hello from Express!' });
+    res.send("hy");
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// All remaining requests return the React app
+app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
 });
+
+export default app;
