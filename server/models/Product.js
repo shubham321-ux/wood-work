@@ -13,6 +13,9 @@ const productSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    features: [{
+        type: String
+    }],
     image: {
         public_id: String,
         url: String
