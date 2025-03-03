@@ -56,4 +56,78 @@ router.post('/', protect, admin, upload.single('image'), async (req, res) => {
     }
 });
 
+// Update product
+router.put('/:id', protect, admin, upload.single('image'), async (req, res) => {
+    try {
+        const { title, description, price, features } = req.body;
+        const productId = req.params.id;
+
+        let imageData = {};
+        if (req.file) {
+            // Delete old image from Cloudinary if exists
+            const oldProduct = await Product.findById(productId);
+            if (oldProduct.image.public_id) {
+                await cloudinary.uploader.destroy(oldProduct.image.public_id);
+            }
+
+            // Upload new image
+            const result = await cloudinary.uploader.upload(req.file.path);
+            imageData = {
+                public_id: result.public_id,
+                url: result.secure_url
+            };
+            fs.unlinkSync(req.file.path);
+        }
+
+        const updatedProduct = await Product.findByIdAndUpdate(
+            productId,
+            {
+                title,
+                description,
+                price,
+                features: Array.isArray(features) ? features : [],
+                ...(req.file && { image: imageData })
+            },
+            { new: true }
+        );
+
+        res.json({ success: true, product: updatedProduct });
+    } catch (error) {
+        console.error('Product update error:', error);
+        res.status(500).json({
+            message: 'Error updating product',
+            error: error.message
+        });
+    }
+});
+
+// Delete product
+router.delete('/:id', protect, admin, async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+        
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        // Delete image from Cloudinary if exists
+        if (product.image.public_id) {
+            await cloudinary.uploader.destroy(product.image.public_id);
+        }
+
+        await Product.findByIdAndDelete(req.params.id);
+        
+        res.json({ 
+            success: true, 
+            message: 'Product deleted successfully' 
+        });
+    } catch (error) {
+        console.error('Product deletion error:', error);
+        res.status(500).json({
+            message: 'Error deleting product',
+            error: error.message
+        });
+    }
+});
+
 export default router;
